@@ -1,5 +1,5 @@
 fileFormatVersion: 2
-guid: 4c1b24b630a3e454f8872d2a1ba855e4
+guid: 86dc8d9b0ad92294aaab1caf60ff595c
 ModelImporter:
   serializedVersion: 22200
   internalIDToNameTable: []
@@ -31,7 +31,36 @@ ModelImporter:
     animationWrapMode: 0
     extraExposedTransformPaths: []
     extraUserProperties: []
-    clipAnimations: []
+    clipAnimations:
+    - serializedVersion: 16
+      name: Idle
+      takeName: Take 001
+      internalID: 1827226128182048838
+      firstFrame: 0
+      lastFrame: 90
+      wrapMode: 0
+      orientationOffsetY: 0
+      level: 0
+      cycleOffset: 0
+      loop: 0
+      hasAdditiveReferencePose: 0
+      loopTime: 1
+      loopBlend: 0
+      loopBlendOrientation: 1
+      loopBlendPositionY: 1
+      loopBlendPositionXZ: 1
+      keepOriginalOrientation: 0
+      keepOriginalPositionY: 1
+      keepOriginalPositionXZ: 0
+      heightFromFeet: 0
+      mirror: 0
+      bodyMask: 01000000010000000100000001000000010000000100000001000000010000000100000001000000010000000100000001000000
+      curves: []
+      events: []
+      transformMask: []
+      maskType: 3
+      maskSource: {instanceID: 0}
+      additiveReferencePoseFrame: 0
     isReadable: 0
   meshes:
     lODScreenPercentages: []
@@ -406,7 +435,7 @@ ModelImporter:
     - name: Main_player(Clone)
       parentName: 
       position: {x: 0, y: 0, z: 0}
-      rotation: {x: 0, y: 0.0000005640015, z: 0, w: 1}
+      rotation: {x: 0, y: 0.00000056257215, z: 0, w: 1}
       scale: {x: 1, y: 1, z: 1}
     - name: Bip001
       parentName: Main_player(Clone)
@@ -511,7 +540,7 @@ ModelImporter:
     - name: Bip001 L Finger0
       parentName: Bip001 L Hand
       position: {x: -0.026849136, y: 0.02572708, z: -0.020306969}
-      rotation: {x: 0.0036283126, y: 0.37981987, z: -0.0087593775, w: -0.9250118}
+      rotation: {x: 0, y: 0.3826835, z: 0, w: -0.9238795}
       scale: {x: 1.0000001, y: 0.99999994, z: 0.9999999}
     - name: Bip001 L Finger01
       parentName: Bip001 L Finger0
@@ -826,7 +855,7 @@ ModelImporter:
     - name: Bip001 R Finger0
       parentName: Bip001 R Hand
       position: {x: -0.026849099, y: 0.02572708, z: 0.020306969}
-      rotation: {x: 0.0036287592, y: 0.3798199, z: 0.008760867, w: 0.9250119}
+      rotation: {x: 0, y: 0.38268346, z: 0, w: 0.9238795}
       scale: {x: 1.0000001, y: 1.0000001, z: 1.0000001}
     - name: Bip001 R Finger01
       parentName: Bip001 R Finger0
@@ -1025,11 +1054,11 @@ ModelImporter:
     hasTranslationDoF: 1
     hasExtraRoot: 1
     skeletonHasParents: 1
-  lastHumanDescriptionAvatarSource: {instanceID: 0}
+  lastHumanDescriptionAvatarSource: {fileID: 9000000, guid: 4c1b24b630a3e454f8872d2a1ba855e4, type: 3}
   autoGenerateAvatarMappingIfUnspecified: 1
   animationType: 3
   humanoidOversampling: 1
-  avatarSetup: 1
+  avatarSetup: 2
   addHumanoidExtraRootOnlyWhenUsingAvatar: 1
   importBlendShapeDeformPercent: 1
   remapMaterialsIfMaterialImportModeIsNone: 0

@@ -6,7 +6,7 @@ public partial class Player_move : MonoBehaviour
 {
     #region ÀÎ½ºÆåÅÍ
     [Header("3ÀÎÄª (¿Àºø)")]
-    [SerializeField] private Vector3 _thirdOffset = new Vector3(0f, 2f, -3f);
+    [SerializeField] private Vector3 _thirdOffset = new Vector3(0f, 1.5f, -2f);
     [SerializeField] private float _thirdLookAtHeight = 1.5f;
     [Min(0f)]
     [SerializeField] private float _thirdSharpness = 18f;
@@ -14,8 +14,8 @@ public partial class Player_move : MonoBehaviour
     [Header("3ÀÎÄª ¿Àºø ¿É¼Ç")]
     [SerializeField] private bool _thirdUseOrbit = true;
     [SerializeField] private float _orbitSensitivity = 3.0f;
-    [SerializeField] private float _orbitPitchMin = -10.0f;
-    [SerializeField] private float _orbitPitchMax = 25.0f;
+    [SerializeField] private float _orbitPitchMin = -8.0f;
+    [SerializeField] private float _orbitPitchMax = 20.0f;
     #endregion
 
     // ³»ºÎ º¯¼ö
@@ -83,5 +83,20 @@ public partial class Player_move : MonoBehaviour
         }
 
     }
+
+    private Vector3 BuildMoveDirection(Vector3 input)
+    {
+        if (_cameraTr == null)
+        {
+            return input.normalized;
+        }
+
+        Vector3 camF = Vector3.ProjectOnPlane(_cameraTr.forward, Vector3.up).normalized;
+        Vector3 camR = Vector3.ProjectOnPlane(_cameraTr.right, Vector3.up).normalized;
+
+        Vector3 dir = camF * input.z + camR * input.x;
+        return dir.normalized;
+    }
+
 
 }

@@ -14,7 +14,7 @@ public partial class Player_move : MonoBehaviour
     [SerializeField] private Transform _cameraTr;
 
     [Header("이동")]
-    [SerializeField] private float _walkSpeed;
+    [SerializeField] private float _speed = 1f;
     [SerializeField] private float _rotateSharpness = 15.0f;
 
     [Header("점프")]
@@ -103,6 +103,8 @@ public partial class Player_move : MonoBehaviour
             }
         });
 
+        InitThird(true);
+        
         _cameraTr = _cameraTr.transform;
 
     }
@@ -127,6 +129,7 @@ public partial class Player_move : MonoBehaviour
 
         bool jumpedThisFrame = TickJumpAndGravity(JumpKeyDown);
 
+
         if (_hasJumpParam && jumpedThisFrame)
         {
             _animator.SetTrigger(_hashJump);
@@ -142,7 +145,18 @@ public partial class Player_move : MonoBehaviour
             _animator.SetTrigger(_WinTrigger);
         }
 
+        Vector3 moveDir = (input.sqrMagnitude > 0.0001f) ? BuildMoveDirection(input) : Vector3.zero;
+
+        Vector3 velocity = moveDir * _speed;
+        velocity.y = _verticalValue;
+
+        _controller.Move(velocity * Time.deltaTime);
+
         TickRotate(moveDir);
+
+        float speed01 = moveDir.magnitude;
+
+        _animator.SetFloat(_hashSpeed, speed01, _speedDamp, Time.deltaTime);
 
     }
 
@@ -161,12 +175,18 @@ public partial class Player_move : MonoBehaviour
             {
                 _verticalValue = _groundStick;
             }
+
+            if (jumpKeyDown)
+            {
+                _verticalValue = Mathf.Sqrt(_jumpHeight * -2.0f * _gravity);
+
+                jumped = true;
+
+            }
+
         }
 
-        if (jumpKeyDown)
-        {
-            _verticalValue = Mathf.Sqrt(_jumpHeight * -2.0f * _gravity);
-        }
+        _verticalValue += _gravity * Time.deltaTime;
 
         return jumped;
     }
