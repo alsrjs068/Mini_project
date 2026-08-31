@@ -1,59 +1,88 @@
+using System;
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 
 public class Stat : MonoBehaviour
 {
-
+    
     public struct Unit
     {
         public string name;
         public string species;
         public bool boss;
-    }
-
-
-    public struct UnitStats
-    {
+        public bool isDead;
         public float MaxHP;
         public float CurrentHP;
         public int ATK;
         public int DFS;
         public float SkillCoolDown;
+        public int ExpReward;
 
+        public void PrintStatus()
+        {
+            CPrint.Log($"이름 : {name} / 종족 : {species} / 체력 : {CurrentHP} / 공격력 : {ATK} / 방어력 : {DFS}");
+        }
     }
 
 
-    static void PlayerStat()
+    public static Unit CreatePlayer()
     {
         Unit player = new Unit();
         player.name = "플레이어";
         player.species = "인간";
         player.boss = false;
+        player.isDead = false;
+        player.MaxHP = 100.0f;
+        player.CurrentHP = 100.0f;
+        player.ATK = 70;
+        player.DFS = 45;
+        player.SkillCoolDown = 5.0f;
 
-        UnitStats playerstats= new UnitStats();
-        playerstats.MaxHP = 100.0f;
-        playerstats.CurrentHP = 100.0f;
-        playerstats.ATK = 70;
-        playerstats.DFS = 45;
-        playerstats.SkillCoolDown = 10.0f;
+        player.PrintStatus();
 
-        CPrint.Log($"플레이어 이름 : {player.name}");
-        CPrint.Log($"종족 : {player.species}");
+        return player;
 
     }
 
-    static void SkelletonStat()
+    public static Unit CreateSkelleton(int currentstage)
     {
+        Unit skelleton = new Unit();
+        skelleton.name = "스켈레톤";
+        skelleton.species = "언데드";
+        skelleton.boss = false;
+        skelleton.isDead = false;
+        skelleton.MaxHP = 100.0f + (currentstage * 50);
+        skelleton.CurrentHP = 100.0f + (currentstage * 50);
+        skelleton.ATK = 30 + (currentstage * 10);
+        skelleton.DFS = 20 + (currentstage * 10);
+        skelleton.ExpReward = 50 + (currentstage * 20);
 
+
+        skelleton.PrintStatus();
+
+        return skelleton;
     }
 
-    static void ZombieStat()
+    public static Unit CreateZombie(int currentstage) // 좀비는 스켈레톤과 다르게 피부라는 1차 방어막 존재 -> 스켈레톤보다 방어력 높게 설계
     {
+        Unit Zombie = new Unit();
+        Zombie.name = "좀비";
+        Zombie.species = "언데드";
+        Zombie.boss = false;
+        Zombie.isDead = false;
+        Zombie.MaxHP = 100.0f + (currentstage * 50);
+        Zombie.CurrentHP = 100.0f + (currentstage * 50);
+        Zombie.ATK = 30 + (currentstage * 10);
+        Zombie.DFS = 20 + (currentstage * 20);
+        Zombie.ExpReward = 60 + (currentstage * 20);
 
+        Zombie.PrintStatus();
+
+        return Zombie;
     }
 
-    static void BossStat()
+    public static void BossStat()
     {
 
     }
