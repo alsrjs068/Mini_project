@@ -6,6 +6,7 @@ using UnityEngine;
 public class Stat : MonoBehaviour
 {
     
+
     public struct Unit
     {
         public string name;
@@ -19,19 +20,33 @@ public class Stat : MonoBehaviour
         public float SkillCoolDown;
         public int ExpReward;
 
-        public void PrintStatus()
+        public int BonusATK;
+        public int BonusDFS;
+        public float BonusHP;
+        public int BonusDamage;
+
+        public int finalATK => ATK + BonusATK;
+        public int finalDFS => DFS + BonusDFS;
+        public float finalHP => MaxHP + BonusHP;
+        
+
+        public void PrintStatusP()
         {
-            CPrint.Log($"이름 : {name} / 종족 : {species} / 체력 : {CurrentHP} / 공격력 : {ATK} / 방어력 : {DFS}");
+            CPrint.Log($"이름 : {name} / 종족 : {species} / 체력 : {finalHP} / 공격력 : {finalATK} / 방어력 : {finalDFS}");
+        }
+
+        public void PrintStatsM()
+        {
+            CPrint.Log($"이름 : {name} / 종족 : {species} / 체력 : {MaxHP} / 공격력 : {ATK} / 방어력 : {DFS}");
         }
     }
-
+    
 
     public static Unit CreatePlayer()
     {
         Unit player = new Unit();
         player.name = "플레이어";
         player.species = "인간";
-        player.boss = false;
         player.isDead = false;
         player.MaxHP = 100.0f;
         player.CurrentHP = 100.0f;
@@ -39,7 +54,7 @@ public class Stat : MonoBehaviour
         player.DFS = 45;
         player.SkillCoolDown = 5.0f;
 
-        player.PrintStatus();
+        player.PrintStatusP();
 
         return player;
 
@@ -59,7 +74,7 @@ public class Stat : MonoBehaviour
         skelleton.ExpReward = 50 + (currentstage * 20);
 
 
-        skelleton.PrintStatus();
+        skelleton.PrintStatsM();
 
         return skelleton;
     }
@@ -77,14 +92,17 @@ public class Stat : MonoBehaviour
         Zombie.DFS = 20 + (currentstage * 20);
         Zombie.ExpReward = 60 + (currentstage * 20);
 
-        Zombie.PrintStatus();
+        Zombie.PrintStatsM();
 
         return Zombie;
     }
 
     public static void BossStat()
     {
-
+        Unit Boss = new Unit();
+        Boss.name = "언데드 킹";
+        Boss.species = "언데드";
+        Boss.PrintStatsM();
     }
 
 

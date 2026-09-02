@@ -3,18 +3,19 @@ using System.Collections.Generic;
 using System.Runtime.CompilerServices;
 using UnityEngine;
 
+
+public enum BattleState
+{
+    DungeonEnter,
+    PlayerTurn,
+    MonsterTurn,
+    LevelUP,
+    Judgement,
+    Paused
+}
+
 public class BattleManager : MonoBehaviour
 {
-    public enum BattleState
-    {
-        DungeonEnter,
-        PlayerTurn,
-        MonsterTurn,
-        Calculation,
-        LevelUP,
-        Judgement,
-        Paused
-    }
 
     #region 인스펙터
 
@@ -26,8 +27,23 @@ public class BattleManager : MonoBehaviour
     [SerializeField] private Transform _pSpawnPoint;
     [SerializeField] private List<Transform> _mSpawnPoint = new List<Transform>();
 
-    [Header("스킬UI")]
+    [Header("스킬 UI")]
     [SerializeField] private GameObject _playerSkillUI;
+
+    [Header("승리 UI")]
+    [SerializeField] private GameObject _victoryUI;
+
+    [Header("패배 UI")]
+    [SerializeField] private GameObject _defeatUI;
+
+    [Header("로비 씬으로 돌아가는 선택 UI")]
+    [SerializeField] private GameObject _returnLobbyUI;
+
+    [Header("스테이지 선택으로 돌아가는 선택 UI")]
+    [SerializeField] private GameObject _retrunselecstageUI;
+
+    [Header("스킬 강화 UI 넣기")]
+    [SerializeField] private List<GameObject> _enforceSkillUI = new List<GameObject>();
 
     #endregion
 
@@ -37,6 +53,9 @@ public class BattleManager : MonoBehaviour
     private BattleState _currentState;
     private int _currentStage = 1;
     private BattleUnits _selectedTarget;
+    private int _totalEXP = 0;
+    private int _amount;
+    
 
     public void ChangeState(BattleState newState)
     {
@@ -62,12 +81,6 @@ public class BattleManager : MonoBehaviour
                     break;
                 }
 
-            case BattleState.Calculation:
-                {
-                    Calculate();
-                    break;
-                }
-
             case BattleState.LevelUP:
                 {
                     LevelUP();
@@ -82,7 +95,6 @@ public class BattleManager : MonoBehaviour
 
             case BattleState.Paused:
                 {
-                    Paused();
                     break;
                 }
 
@@ -124,30 +136,58 @@ public class BattleManager : MonoBehaviour
 
     public void MonsterT()
     {
-
-    }
-
-    public void Calculate()
-    {
-
+        StartCoroutine(MonsterTcrt());
     }
 
     public void LevelUP()
     {
+        // 랜덤으로 중복되지 않게 숫자 뽑기
+        int numA = Random.Range(0, 4);
+        int numB;
+        do
+        {
+            numB = Random.Range(0, 4);
 
+
+        } while (numA == numB); // 이 조건이면 다시뽑기.
+
+        _enforceSkillUI[numA].SetActive(true);
+        _enforceSkillUI[numB].SetActive(true);
 
     }
 
     public void Judgement()
     {
+        if(MonsterClear() == true)
+        {
+            bool isLevelUp = _player.GainEXP(_totalEXP);
+
+            if (isLevelUp == true)
+            {
+                ChangeState(BattleState.LevelUP);
+            }
+
+            else
+            {
+                _victoryUI.SetActive(true);
+            }
+
+            _totalEXP = 0; // 경험치 지급이 끝났으면 획득 경험치는 다시 0으로 초기화.
+        }
+
+        else if (_player.IsDead)
+        {
+            _defeatUI.SetActive(true);
+        }
+
+        else
+        {
+            ChangeState(BattleState.PlayerTurn);
+        }
 
     }
 
-    public void Paused()
-    {
-
-    }
-
+    
     public void SelectTarget(BattleUnits target)
     {
         if(_currentState == BattleState.PlayerTurn && target.IsDead == false)
@@ -163,13 +203,31 @@ public class BattleManager : MonoBehaviour
         if (_player.CanUseSkill())
         {
             _player.HealSkill(_selectedTarget);
-            _playerSkillUI.SetActive(false);
-            ChangeState(BattleState.MonsterTurn);
+
+            if( _selectedTarget.IsDead == true )
+            {
+                _totalEXP = _totalEXP + _selectedTarget.ExpReward;
+            }
+
+            if(MonsterClear() == true)
+            {
+                ChangeState(BattleState.Judgement);
+            }
         }
 
         else
         {
-            _selectedTarget.TakeDamage(_player.ATK);
+            _player.Attack(_selectedTarget);
+
+            if (_selectedTarget.IsDead == true)
+            {
+                _totalEXP = _totalEXP + _selectedTarget.ExpReward;
+            }
+
+            if (MonsterClear() == true)
+            {
+                ChangeState(BattleState.Judgement);
+            }
         }
 
         _playerSkillUI.SetActive(false);
@@ -177,6 +235,130 @@ public class BattleManager : MonoBehaviour
 
         
     }
+
+    IEnumerator MonsterTcrt()
+    {
+        
+        foreach (var monster in _monsters)
+        {
+            if(_player.IsDead) // 플레이어가 죽어있는지 확인. 안죽었으면 공격 / 죽었으면 판단단계로 점프
+            {
+                ChangeState(BattleState.Judgement);
+                yield break;
+            }
+
+            if (monster.IsDead) // 죽었으면 실행 X
+            {
+                continue;
+            }
+
+            else
+            {
+                monster.Attack(_player);
+                yield return new WaitForSeconds(1.5f); // 공격 애니메이션 출력 시간 기다리기
+            }
+
+
+        }
+
+        ChangeState(BattleState.PlayerTurn);
+
+    }
+
+    private bool MonsterClear() // 모든 몬스터를 죽인 것을 확인.
+    {
+        foreach(var monster in _monsters)
+        {
+            if(monster.IsDead == false)
+            {
+                break;
+            }
+
+            else
+            {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    public void OnClickToLobby() // 로비로 가는 UI
+    {
+
+    }
+
+    public void OnClickToSelectStage() // 스테이지 선택창으로 가는 UI
+    {
+
+    }
+    
+    public void OnClickSkillEnfoce(int cardIndex)
+    {
+        switch (cardIndex)
+        {
+            case 0:
+                {
+                    BattleUnits.HealEnforce newEnforce0 = new BattleUnits.HealEnforce
+                    {
+                        playerresurrection = true,
+                        damageEnforce = 30,
+                        BonusHeal = 15
+                    };
+                    _player.EnforcedSkill(newEnforce0);
+                    break;
+                }
+            
+            case 1:
+                {
+                    BattleUnits.HealEnforce newEnforce1 = new BattleUnits.HealEnforce
+                    {
+                        criticalChance = 20,
+                        isCritical = true
+                    };
+                    _player.EnforcedSkill(newEnforce1);
+                    break;
+
+                }
+
+            case 2:
+                {
+                    BattleUnits.HealEnforce newEnforce2 = new BattleUnits.HealEnforce
+                    {
+                        Marked = true,
+                        declineCooldown = 1
+                    };
+                    _player.EnforcedSkill(newEnforce2);
+                    break;
+                }
+
+            case 3:
+                {
+                    BattleUnits.HealEnforce newEnforce3 = new BattleUnits.HealEnforce
+                    {
+                        BonusHeal = 30,
+                        targetCount = 1
+                    };
+                    _player.EnforcedSkill(newEnforce3);
+                    break;
+                }
+
+        }
+
+        foreach(var card in _enforceSkillUI)
+        {
+            card.SetActive(false);
+        }
+
+        _currentStage++;
+        ChangeState(BattleState.DungeonEnter);
+
+
+    }
+    
+    
+
+    
 
 
     private void Start()
