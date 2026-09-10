@@ -48,8 +48,8 @@ public class Stat : MonoBehaviour
         player.name = "플레이어";
         player.species = "인간";
         player.isDead = false;
-        player.MaxHP = 100.0f;
-        player.CurrentHP = 100.0f;
+        player.MaxHP = 300.0f;
+        player.CurrentHP = 300.0f;
         player.ATK = 70;
         player.DFS = 45;
         player.SkillCoolDown = 5.0f;
@@ -97,12 +97,14 @@ public class Stat : MonoBehaviour
         return Zombie;
     }
 
-    public static void BossStat()
+    public static Unit BossStat(int currentstage)
     {
         Unit Boss = new Unit();
         Boss.name = "언데드 킹";
         Boss.species = "언데드";
         Boss.PrintStatsM();
+
+        return Boss;
     }
 
 

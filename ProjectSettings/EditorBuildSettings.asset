@@ -6,6 +6,33 @@ EditorBuildSettings:
   serializedVersion: 2
   m_Scenes:
   - enabled: 1
+    path: Assets/Scenes/Tltle.unity
+    guid: 656bddfd09ff3284da0ddda92c94a07c
+  - enabled: 1
     path: Assets/Scenes/Lobby.unity
     guid: 0e68355afadb08340aab8607d5db65e0
+  - enabled: 1
+    path: Assets/Scenes/Stage1.unity
+    guid: 7164525ea3d0d51489838d9b5f5d4aae
+  - enabled: 1
+    path: Assets/Scenes/EQEnforce.unity
+    guid: aaa9db4ce127eaa47868d3751d48cea4
+  - enabled: 1
+    path: Assets/Scenes/Market.unity
+    guid: 13e4605c2919ba3498011bc7caa9574a
+  - enabled: 1
+    path: Assets/Scenes/SelectStage.unity
+    guid: a3e2e6d52aaeaf3469d9279b20bc1590
+  - enabled: 1
+    path: Assets/Scenes/Stage2.unity
+    guid: 8ad257a0af0269b46ae106ce3916ea7a
+  - enabled: 1
+    path: Assets/Scenes/Stage3.unity
+    guid: 7330433ed0b6eaa4ba3948f5c9d02453
+  - enabled: 1
+    path: Assets/Scenes/Stage4.unity
+    guid: 16eccff581c76484ab7e6022df36213c
+  - enabled: 1
+    path: Assets/Scenes/Stage5.unity
+    guid: e4a1b2344aee3da42b286d2655399d47
   m_configObjects: {}

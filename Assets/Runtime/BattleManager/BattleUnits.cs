@@ -1,7 +1,8 @@
 using System.Collections;
 using System.Collections.Generic;
+using TMPro.EditorUtilities;
 using UnityEngine;
-using static UnityEditor.Experimental.GraphView.GraphView;
+using UnityEngine.UI;
 
 public enum SkillStat
 {
@@ -12,14 +13,18 @@ public enum SkillStat
 }
 
 
-public abstract class BattleUnits : MonoBehaviour, IDamageable, IAttackable // Ãß»óÈ­, Ä¸½¶È­, ÀÎÅÍÆäÀÌ½º »ç¿ëÇÏ±â
+public class BattleUnits : MonoBehaviour, IDamageable, IAttackable // Ãß»óÈ­, Ä¸½¶È­, ÀÎÅÍÆäÀÌ½º »ç¿ëÇÏ±â
 {
     // ÀÎ½ºÆåÅÍ
-    
 
-    
+    [Header("½ºÄÌ·¹Åæ¸¸ ³Ö±â")]
+    [SerializeField] private GameObject _deathPrefab;
 
+    [Header("Ã¼·Â UI")]
+    [SerializeField] private UnityEngine.UI.Slider _HpSlider;
 
+    [Header("½ºÅ³ È°¼ºÈ­ frameUI")]
+    [SerializeField] private GameObject _skillActiveUI;
 
 
     // ³»ºÎ º¯¼ö
@@ -33,6 +38,7 @@ public abstract class BattleUnits : MonoBehaviour, IDamageable, IAttackable // Ã
     private float _currentCoolDown = 0;
     private HealEnforce _currentEnforce;
     public bool isMarked = false;
+    
 
     // ¶÷´Ù½Ä
 
@@ -46,26 +52,90 @@ public abstract class BattleUnits : MonoBehaviour, IDamageable, IAttackable // Ã
     {
         _stat = stat;
 
+        if(_HpSlider != null)
+        {
+            
+            if (_stat.finalHP > 0)
+            {
+                _HpSlider.maxValue = _stat.finalHP;
+            }
+            else
+            {
+                _HpSlider.maxValue = _stat.MaxHP;
+            }
+
+            _HpSlider.value = _stat.CurrentHP;
+        }
+
     }
 
-    
+
     public virtual void TakeDamage(int attackerATK)
     {
+        if (_stat.isDead)
+        {
+            return;
+        }
+
         float Damage = attackerATK * (100f / (100f + _stat.DFS));
 
         _stat.CurrentHP = _stat.CurrentHP - Damage;
 
         _animator.SetTrigger("tHit");
 
-        if (_stat.CurrentHP <= 0)
+        if (_HpSlider != null)
         {
-            _stat.CurrentHP = 0;
-
-            _animator.SetTrigger("tDie");
-
-            _stat.isDead = true;
+            _HpSlider.value = _stat.CurrentHP;
         }
 
+        if (_HpSlider != null)
+        {
+            _HpSlider.value = _stat.CurrentHP;
+
+        }
+
+        if (_stat.CurrentHP <= 0)
+        {
+            if (_currentEnforce.playerresurrection == true)
+            {
+                Resurrection();
+            }
+
+            else
+            {
+                OnDeath();
+            }
+
+        }
+    }
+
+    public virtual void OnDeath()
+    {
+        _stat.CurrentHP = 0;
+
+        GetComponent<CapsuleCollider>().enabled = false;
+
+        _animator.SetTrigger("tDie");
+
+        _stat.isDead = true;
+
+        if(CompareTag("Skelleton"))
+        {
+            if (_deathPrefab != null) // ½ºÄÌ·¹ÅæÀÇ »ç¸Á ½Ã ÇØ´ç ÇÁ¸®ÆÕÀ¸·Î ¹Ù²Ù±â
+            {
+                Instantiate(_deathPrefab, transform.position, transform.rotation);
+            }
+
+            gameObject.SetActive(false);
+        }
+
+        else
+        {
+            StartCoroutine(Co_Die());
+        }
+
+        
+        
     }
 
     public virtual void Attack(IDamageable target)
@@ -80,8 +150,17 @@ public abstract class BattleUnits : MonoBehaviour, IDamageable, IAttackable // Ã
 
     }
     
+    private IEnumerator Co_Die()
+    {
+        yield return new WaitForSeconds(1.5f);
 
-    public abstract IEnumerator TurnExchange();
+        gameObject.SetActive(false);
+    }
+
+    public virtual IEnumerator TurnExchange()
+    {
+        yield break;
+    }
 
     public struct HealEnforce
     {
@@ -102,7 +181,7 @@ public abstract class BattleUnits : MonoBehaviour, IDamageable, IAttackable // Ã
         _currentEnforce.criticalChance += newEnforce.criticalChance;
         _currentEnforce.BonusHeal += newEnforce.BonusHeal;
         _currentEnforce.targetCount += newEnforce.targetCount;
-        _currentEnforce.declineCooldown -= newEnforce.declineCooldown;
+        _currentEnforce.declineCooldown += newEnforce.declineCooldown;
         _currentEnforce.playerresurrection = _currentEnforce.playerresurrection || newEnforce.playerresurrection;
         _currentEnforce.isCritical = _currentEnforce.isCritical || newEnforce.isCritical;
         _currentEnforce.Marked = _currentEnforce.Marked || newEnforce.Marked;
@@ -146,13 +225,11 @@ public abstract class BattleUnits : MonoBehaviour, IDamageable, IAttackable // Ã
         {
             return;
         }
-
-        if (_currentCoolDown <= 0)
-        {
-            _animator.SetTrigger("tHeal");
+        
+        _animator.SetTrigger("tHeal");
 
 
-            float Damage = _stat.finalATK * 1.5f * (100f / (100f + _stat.DFS)) + _currentEnforce.damageEnforce;
+            float Damage = _stat.finalATK * 1.5f + _currentEnforce.damageEnforce;
             // ¾ðµ¥µå ¸ó½ºÅÍ¿¡°Ô ¼º¼Ó¼º Èú °ø°Ý -> 1.5¹è Ãß°¡ µ¥¹ÌÁö + Ãß°¡ °íÁ¤ µ¥¹ÌÁö
 
             if((target as BattleUnits).isMarked == true) // ÀÏ¹Ý °ø°Ý½Ã Ç¥½ÄÀÌ »ý±â´Â ¿É¼ÇÀ» ¸Ô¾úÀ» ¶§
@@ -175,23 +252,55 @@ public abstract class BattleUnits : MonoBehaviour, IDamageable, IAttackable // Ã
 
             target.TakeDamage((int)Damage);
 
+            _currentCoolDown = Mathf.Max(0.5f, _stat.SkillCoolDown - _currentEnforce.declineCooldown);
 
-            _stat.CurrentHP = Mathf.Min(_stat.finalHP, _stat.CurrentHP + _currentEnforce.BonusHeal); // ÇÃ·¹ÀÌ¾î Ã¼·Â È¸º¹
+    }
 
-            _currentCoolDown = _stat.SkillCoolDown - _currentEnforce.declineCooldown;
-
-        }
-
-        else
+    public void HealSelf()
+    {
+        if(_stat.isDead) // ÇÃ·¹ÀÌ¾î°¡ »ç¸ÁÇÑ »óÅÂÀÎÁö È®ÀÎ
         {
             return;
         }
 
+        _animator.SetTrigger("tHeal"); // ¾Ö´Ï¸ÞÀÌ¼Ç Ãâ·ÂÇÏ°í
+
+        float totalHeal = _stat.finalATK * 0.8f + _currentEnforce.BonusHeal;
+
+        _stat.CurrentHP = Mathf.Min(_stat.finalHP, _stat.CurrentHP + totalHeal); // Ã¼·Â È¸º¹ÀÌ ÃÖ´ë Ã¼·ÂÀ» ³ÑÁö ¾Ê°Ô ÇÏ°í
+
+        if(_HpSlider != null) // ½½¶óÀÌµå Ã¼·Â ¹Ù µ¿±âÈ­
+        {
+            _HpSlider.value = _stat.CurrentHP;
+        }
+
+        _currentCoolDown = Mathf.Max(0.5f, _stat.SkillCoolDown - _currentEnforce.declineCooldown); // ÄðÅ¸ÀÓ
 
     }
 
+    public void Resurrection()
+    {
+        if (_stat.CurrentHP <= 0) // ÇÃ·¹ÀÌ¾î°¡ Ã¼·ÂÀÌ 0ÀÌ¶ó¸é
+        {
+            _currentEnforce.playerresurrection = false; // ºÎÈ° °¡´ÉÇÑ »óÅÂ¸¦ ºÒ°¡´ÉÀ¸·Î ¹Ù²Ù°í
+            _stat.CurrentHP = _stat.finalHP / 2f; // ÇÃ·¹ÀÌ¾îÀÇ Ã¼·ÂÀ» ÃÖ´ë Ã¼·ÂÀÇ Àý¹ÝÀ¸·Î ¸¸µç´Ù.
+
+            if (_HpSlider != null) // ½½¶óÀÌµå Ã¼·Â ¹Ù µ¿±âÈ­
+            {
+                _HpSlider.value = _stat.CurrentHP;
+            }
+        }
+    }
+
+
+
     private void OnMouseDown()
     {
+        if(Time.timeScale == 0 )
+        {
+            return;
+        }
+
         FindObjectOfType<BattleManager>()?.SelectTarget(this);   
     }
 
@@ -210,12 +319,17 @@ public abstract class BattleUnits : MonoBehaviour, IDamageable, IAttackable // Ã
         return false;
     }
 
-
+    public int GetTargetCount()
+    {
+        return _currentEnforce.targetCount + 1;
+    }
 
 
     protected virtual void Awake()
     {
         _animator = GetComponent<Animator>();
+
+        
     }
 
     protected virtual void Update()
@@ -240,5 +354,11 @@ public interface IAttackable
 {
     void Attack(IDamageable target);
     int ATK { get; }
+
+}
+
+public interface IDeath
+{
+    void OnDeath();
 
 }

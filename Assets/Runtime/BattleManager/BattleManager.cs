@@ -2,7 +2,7 @@ using System.Collections;
 using System.Collections.Generic;
 using System.Runtime.CompilerServices;
 using UnityEngine;
-
+using UnityEngine.UI;
 
 public enum BattleState
 {
@@ -10,8 +10,7 @@ public enum BattleState
     PlayerTurn,
     MonsterTurn,
     LevelUP,
-    Judgement,
-    Paused
+    Judgement
 }
 
 public class BattleManager : MonoBehaviour
@@ -26,6 +25,7 @@ public class BattleManager : MonoBehaviour
     [Header("스폰위치")]
     [SerializeField] private Transform _pSpawnPoint;
     [SerializeField] private List<Transform> _mSpawnPoint = new List<Transform>();
+
 
     [Header("스킬 UI")]
     [SerializeField] private GameObject _playerSkillUI;
@@ -45,6 +45,15 @@ public class BattleManager : MonoBehaviour
     [Header("스킬 강화 UI 넣기")]
     [SerializeField] private List<GameObject> _enforceSkillUI = new List<GameObject>();
 
+    [Header("씬 로딩 화면")]
+    [SerializeField] private GameObject _loading;
+
+    [Header("스킬 활성화 UI")]
+    [SerializeField] private GameObject _skillInfo;
+
+    [Header("스킬 활성화 frameUI")]
+    [SerializeField] private GameObject _skillActiveUI;
+
     #endregion
 
 
@@ -55,7 +64,11 @@ public class BattleManager : MonoBehaviour
     private BattleUnits _selectedTarget;
     private int _totalEXP = 0;
     private int _amount;
-    
+    private int _selectCardIndex;
+    private List<BattleUnits> _selectedTargets = new List<BattleUnits>();
+    private bool _isSkillMode = false;
+    private int _highestStage = 0;
+
 
     public void ChangeState(BattleState newState)
     {
@@ -93,11 +106,6 @@ public class BattleManager : MonoBehaviour
                     break;
                 }
 
-            case BattleState.Paused:
-                {
-                    break;
-                }
-
         }
             
                 
@@ -112,7 +120,20 @@ public class BattleManager : MonoBehaviour
 
         foreach (var monster in _monsters)
         {
-            monster.InitStat(Stat.CreateSkelleton(_currentStage));
+            if (monster.CompareTag("Skelleton"))
+            {
+                monster.InitStat(Stat.CreateSkelleton(_currentStage));
+            }
+
+            else if (monster.CompareTag("Zombie"))
+            {
+                monster.InitStat(Stat.CreateZombie(_currentStage));
+            }
+
+            else if (monster.CompareTag("Boss"))
+            {
+                monster.InitStat(Stat.BossStat(_currentStage));
+            }
         }
 
         // 스폰 포인트 지정에 시작하면 위치로 이동시키기
@@ -141,6 +162,8 @@ public class BattleManager : MonoBehaviour
 
     public void LevelUP()
     {
+        
+
         // 랜덤으로 중복되지 않게 숫자 뽑기
         int numA = Random.Range(0, 4);
         int numB;
@@ -152,7 +175,10 @@ public class BattleManager : MonoBehaviour
         } while (numA == numB); // 이 조건이면 다시뽑기.
 
         _enforceSkillUI[numA].SetActive(true);
+        _enforceSkillUI[numA].GetComponent<UnityEngine.UI.Button>().interactable = true;
+
         _enforceSkillUI[numB].SetActive(true);
+        _enforceSkillUI[numB].GetComponent<UnityEngine.UI.Button>().interactable = true;
 
     }
 
@@ -162,6 +188,17 @@ public class BattleManager : MonoBehaviour
         {
             bool isLevelUp = _player.GainEXP(_totalEXP);
 
+            PlayerPrefs.GetInt("HighestClearedStage", 0);
+
+            if(_currentStage > _highestStage)
+            {
+                _highestStage = _currentStage;
+            }
+
+            PlayerPrefs.GetInt("HighestClearedStage", _highestStage);
+
+            PlayerPrefs.Save();
+
             if (isLevelUp == true)
             {
                 ChangeState(BattleState.LevelUP);
@@ -170,6 +207,8 @@ public class BattleManager : MonoBehaviour
             else
             {
                 _victoryUI.SetActive(true);
+                _returnLobbyUI.SetActive(true);
+                _retrunselecstageUI.SetActive(true);
             }
 
             _totalEXP = 0; // 경험치 지급이 끝났으면 획득 경험치는 다시 0으로 초기화.
@@ -178,6 +217,8 @@ public class BattleManager : MonoBehaviour
         else if (_player.IsDead)
         {
             _defeatUI.SetActive(true);
+            _returnLobbyUI.SetActive(true);
+            _retrunselecstageUI.SetActive(true);
         }
 
         else
@@ -190,55 +231,96 @@ public class BattleManager : MonoBehaviour
     
     public void SelectTarget(BattleUnits target)
     {
-        if(_currentState == BattleState.PlayerTurn && target.IsDead == false)
-        {
-            _selectedTarget = target;
-        }
-
-        else
+        
+        if (_currentState != BattleState.PlayerTurn) // 플레이어 턴인지 확인
         {
             return;
         }
 
-        if (_player.CanUseSkill())
+        if (target.IsDead == true) // 선택한 타겟이 죽어있는지 확인
         {
-            _player.HealSkill(_selectedTarget);
+            return;
+        }
 
-            if( _selectedTarget.IsDead == true )
+        // 선택된 타겟 클릭 시 선택 취소
+        if (_selectedTargets.Contains(target))
+        {
+            _selectedTargets.Remove(target);
+            return;
+        }
+
+        // 목표치까지 타겟 넣고
+        if (_selectedTargets.Count < _player.GetTargetCount())
+        {
+            if(target == _player)
             {
-                _totalEXP = _totalEXP + _selectedTarget.ExpReward;
+                if (_isSkillMode)
+                {
+                    _selectedTargets.Add(target);
+                }
+
+                else
+                {
+                    return;
+                }
             }
 
-            if(MonsterClear() == true)
+            else
             {
-                ChangeState(BattleState.Judgement);
+                _selectedTargets.Add(target);
             }
+
+        }
+
+
+        // 현재 필드에 살아있는 몬스터 수 계산
+        int aliveMonsterCount = 0;
+
+        for (int i = 0; i < _monsters.Count; i++)
+        {
+            if (_monsters[i].IsDead == false)
+            {
+                aliveMonsterCount++;
+            }
+        }
+
+        // 목표로 채워야 할 타겟 수
+
+        int maxSelectable;
+
+        if (_selectedTargets.Contains(_player))
+        {
+            maxSelectable = aliveMonsterCount + 1;
         }
 
         else
         {
-            _player.Attack(_selectedTarget);
-
-            if (_selectedTarget.IsDead == true)
-            {
-                _totalEXP = _totalEXP + _selectedTarget.ExpReward;
-            }
-
-            if (MonsterClear() == true)
-            {
-                ChangeState(BattleState.Judgement);
-            }
+            maxSelectable = aliveMonsterCount;
         }
 
-        _playerSkillUI.SetActive(false);
-        ChangeState(BattleState.MonsterTurn);
+        int requiredCount = Mathf.Min(_player.GetTargetCount(), maxSelectable);
 
-        
+        // 아직 선택이 부족하다면 공격하지 않고 대기
+        if (_selectedTargets.Count < requiredCount)
+        {
+            return;
+        }
+
+        _skillInfo.SetActive(false);
+        _skillActiveUI.SetActive(false);
+       
+        // 목표 타겟 수가 모두 찼으므로 공격시작
+
+        StartCoroutine(Co_PlayerAttack(_isSkillMode));
+        _isSkillMode = false;
+
     }
 
     IEnumerator MonsterTcrt()
     {
-        
+
+        yield return new WaitForSeconds(1.0f);
+
         foreach (var monster in _monsters)
         {
             if(_player.IsDead) // 플레이어가 죽어있는지 확인. 안죽었으면 공격 / 죽었으면 판단단계로 점프
@@ -258,43 +340,111 @@ public class BattleManager : MonoBehaviour
                 yield return new WaitForSeconds(1.5f); // 공격 애니메이션 출력 시간 기다리기
             }
 
-
         }
 
-        ChangeState(BattleState.PlayerTurn);
+        ChangeState(BattleState.Judgement);
 
     }
 
-    private bool MonsterClear() // 모든 몬스터를 죽인 것을 확인.
+    private IEnumerator Co_PlayerAttack(bool canSkill)
     {
-        foreach(var monster in _monsters)
+        for (int i = 0; i < _selectedTargets.Count; i++)
         {
-            if(monster.IsDead == false)
+            BattleUnits currentTarget = _selectedTargets[i];
+
+            if (currentTarget == _player) // 타겟 안에 플레이어가 있다면 플레이어는 회복
             {
-                break;
+                _player.HealSelf();
             }
 
             else
             {
-                return true;
+                if (canSkill)
+                {
+                    _player.HealSkill(currentTarget);
+                }
+
+                else
+                {
+                    _player.Attack(currentTarget);
+                }
+
+                if (currentTarget.IsDead == true) // 일단 모든 경험치를 더한다.
+                {
+                    _totalEXP = _totalEXP + currentTarget.ExpReward;
+                }
+
             }
         }
 
-        return false;
+        yield return new WaitForSeconds(1.2f);
+
+        // 공격 후 리스트 초기화 및 턴 전환
+        _selectedTargets.Clear();
+        _playerSkillUI.SetActive(false);
+
+        if (MonsterClear() == true)
+        {
+            ChangeState(BattleState.Judgement);
+        }
+        else
+        {
+            ChangeState(BattleState.MonsterTurn);
+        }
+    }
+
+    private bool MonsterClear() // 모든 몬스터를 죽인 것을 확인.
+    {
+        for(int i = 0;  i < _monsters.Count; i++)
+        {
+            if(_monsters[i].IsDead != true)
+            {
+                return false;
+            }
+        }
+
+        return true;
+    }
+
+    public void OnClickHealSkill()
+    {
+        // 이미 켜져 있다면 취소
+        if (_isSkillMode == true)
+        {
+            _isSkillMode = false;
+            _skillInfo.SetActive(false);
+            _skillActiveUI.SetActive(false);
+            _selectedTargets.Clear(); // 선택 중이던 타겟 초기화
+            return;
+        }
+
+        // 쿨타임 충족 시 켜기
+        if (_player.CanUseSkill())
+        {
+            _isSkillMode = true;
+            _skillInfo.SetActive(true);
+            _skillActiveUI.SetActive(true);
+        }
     }
 
     public void OnClickToLobby() // 로비로 가는 UI
     {
-
+        Time.timeScale = 1f;
+        SceneFlowManager.Instance.ResetLoading();
+        SceneFlowManager.Instance.LoadScene(SceneID.Lobby);
     }
 
     public void OnClickToSelectStage() // 스테이지 선택창으로 가는 UI
     {
-
+        Time.timeScale = 1f;
+        SceneFlowManager.Instance.LoadScene(SceneID.SelectStage);
     }
     
     public void OnClickSkillEnfoce(int cardIndex)
     {
+
+        _selectCardIndex = cardIndex;
+
         switch (cardIndex)
         {
             case 0:
@@ -345,21 +495,33 @@ public class BattleManager : MonoBehaviour
 
         }
 
-        foreach(var card in _enforceSkillUI)
-        {
-            card.SetActive(false);
-        }
-
-        _currentStage++;
-        ChangeState(BattleState.DungeonEnter);
-
+        StartCoroutine(CardSelect());
 
     }
-    
-    
 
-    
+    private IEnumerator CardSelect()
+    {
 
+        for (int i = 0; i < _enforceSkillUI.Count; i++)
+        {
+            if( i != _selectCardIndex)
+            {
+                _enforceSkillUI[i].SetActive(false);
+            }
+
+        }
+
+        _enforceSkillUI[_selectCardIndex].GetComponent<UnityEngine.UI.Button>().interactable = false;
+
+        yield return new WaitForSeconds(3f); 
+
+        _enforceSkillUI[_selectCardIndex].SetActive(false);
+
+        _victoryUI.SetActive(true); // 승리 UI 출력
+        _returnLobbyUI.SetActive(true);
+        _retrunselecstageUI.SetActive(true);
+    }
+    
 
     private void Start()
     {
@@ -367,6 +529,60 @@ public class BattleManager : MonoBehaviour
         {
             CPrint.Warn("인스펙터가 비어있다. 게임 실행 불가");
             return;
+        }
+
+        // 스킬 UI 끄기
+        if (_playerSkillUI != null)
+        {
+            _playerSkillUI.SetActive(false);
+        }
+
+        // 스킬 info 끄기
+
+        if(_skillInfo != null && _skillActiveUI != null)
+        {
+            _skillInfo.SetActive(false);
+            _skillActiveUI.SetActive(false);
+        }
+
+        // 결과창 UI 끄기
+        if (_victoryUI != null)
+        {
+            _victoryUI.SetActive(false);
+        }
+
+        if (_defeatUI != null)
+        {
+            _defeatUI.SetActive(false);
+        }
+
+        // 씬 이동 선택 UI 끄기
+        if (_returnLobbyUI != null)
+        {
+            _returnLobbyUI.SetActive(false);
+        }
+
+        if (_retrunselecstageUI != null)
+        {
+            _retrunselecstageUI.SetActive(false);
+        }
+
+        // 스킬 강화 카드 UI 끄기
+        if (_enforceSkillUI != null)
+        {
+            for (int i = 0; i < _enforceSkillUI.Count; i++)
+            {
+                if (_enforceSkillUI[i] != null)
+                {
+                    _enforceSkillUI[i].SetActive(false);
+                }
+            }
+        }
+
+        // 로딩 UI 끄기
+        if (_loading != null)
+        {
+            _loading.SetActive(false);
         }
 
         ChangeState(BattleState.DungeonEnter);
