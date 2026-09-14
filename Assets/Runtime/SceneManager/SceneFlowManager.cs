@@ -44,12 +44,8 @@ public class SceneFlowManager : MonoBehaviour
             return;
         }
 
-        // SceneSystem
         if (_dontDestroyOnLoad)
         {
-            // 사용하기에 편리하기도 하다
-            // 다만 게임 전체에서 계속 유지는 전역 시스템이 되기 떄문에 사용시 주의도 필요하다.
-            // ㄴ PlayerManager / PlayerSIng... : 플레이어는 적합하지 않다.
             DontDestroyOnLoad(this.gameObject);
         }
 
@@ -182,6 +178,9 @@ public class SceneFlowManager : MonoBehaviour
 
         AsyncOperation op = SceneManager.LoadSceneAsync(sceneName);
         op.allowSceneActivation = false;
+
+        yield return new WaitForSecondsRealtime(1.0f);
+        op.allowSceneActivation = true;
 
         while (op.progress < 0.9f)
         {

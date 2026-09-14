@@ -14,10 +14,10 @@ EditorBuildSettings:
   - enabled: 1
     path: Assets/Scenes/Stage1.unity
     guid: 7164525ea3d0d51489838d9b5f5d4aae
-  - enabled: 1
+  - enabled: 0
     path: Assets/Scenes/EQEnforce.unity
     guid: aaa9db4ce127eaa47868d3751d48cea4
-  - enabled: 1
+  - enabled: 0
     path: Assets/Scenes/Market.unity
     guid: 13e4605c2919ba3498011bc7caa9574a
   - enabled: 1

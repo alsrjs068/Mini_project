@@ -1,8 +1,11 @@
 using System.Collections;
 using System.Collections.Generic;
 using System.Runtime.CompilerServices;
+using TMPro;
 using UnityEngine;
+using UnityEngine.ProBuilder.MeshOperations;
 using UnityEngine.UI;
+using static BattleUnits;
 
 public enum BattleState
 {
@@ -29,6 +32,7 @@ public class BattleManager : MonoBehaviour
 
     [Header("스킬 UI")]
     [SerializeField] private GameObject _playerSkillUI;
+    [SerializeField] private Button _skillButton;
 
     [Header("승리 UI")]
     [SerializeField] private GameObject _victoryUI;
@@ -51,8 +55,30 @@ public class BattleManager : MonoBehaviour
     [Header("스킬 활성화 UI")]
     [SerializeField] private GameObject _skillInfo;
 
+    [Header("스킬 정보 UI")]
+    [SerializeField] private TextMeshProUGUI _skillInfoText;
+
     [Header("스킬 활성화 frameUI")]
     [SerializeField] private GameObject _skillActiveUI;
+
+    [Header("현재 스테이지")]
+    [SerializeField] private int _currentStage = 1;
+
+    [Header("경험치")]
+    [SerializeField] private Slider _expSlider;
+    [SerializeField] private TextMeshProUGUI _expText;
+
+    [Header("스테이지 클리어 효과음")]
+    [SerializeField] private AudioClip _stageClear;
+
+    [Header("스테이지 실패 효과음")]
+    [SerializeField] private AudioClip _stageFail;
+
+    [Header("플레이어 레벨업 효과음")]
+    [SerializeField] private AudioClip _LevelUpSFX;
+
+    [Header("플레이어 선택 효과음")]
+    [SerializeField] private AudioClip _SelectSFX;
 
     #endregion
 
@@ -60,7 +86,6 @@ public class BattleManager : MonoBehaviour
     // 내부 변수
 
     private BattleState _currentState;
-    private int _currentStage = 1;
     private BattleUnits _selectedTarget;
     private int _totalEXP = 0;
     private int _amount;
@@ -68,7 +93,9 @@ public class BattleManager : MonoBehaviour
     private List<BattleUnits> _selectedTargets = new List<BattleUnits>();
     private bool _isSkillMode = false;
     private int _highestStage = 0;
-
+    private bool _isAttacking = false;
+    private int _countLevelUps = 0;
+    protected AudioSource _audioSource;
 
     public void ChangeState(BattleState newState)
     {
@@ -116,7 +143,9 @@ public class BattleManager : MonoBehaviour
     {
         // 모든 유닛 스탯 불러오기 
 
-        _player.InitStat(Stat.CreatePlayer());
+        BattleUnits.LoadEnforceData();
+        _player.InitStat(Stat.CreatePlayer(BattleUnits.Level));
+        UpdateExpUI();
 
         foreach (var monster in _monsters)
         {
@@ -130,10 +159,16 @@ public class BattleManager : MonoBehaviour
                 monster.InitStat(Stat.CreateZombie(_currentStage));
             }
 
-            else if (monster.CompareTag("Boss"))
+            else if (monster.CompareTag("MiddleBoss"))
             {
-                monster.InitStat(Stat.BossStat(_currentStage));
+                monster.InitStat(Stat.MiddleBossStat(_currentStage));
             }
+
+            else if (monster.CompareTag("MainBoss"))
+            {
+                monster.InitStat(Stat.MainBossStat(_currentStage));
+            }
+
         }
 
         // 스폰 포인트 지정에 시작하면 위치로 이동시키기
@@ -152,7 +187,10 @@ public class BattleManager : MonoBehaviour
     
     public void PlayerT() // 스킬의 쿨타임을 UI에 표시하고, 사용할 수 있는지 없는지만 보여준다.
     {
+        _isAttacking = false;
+        _selectedTargets.Clear();
         _playerSkillUI.SetActive(true);
+        _skillButton.interactable = _player.CanUseSkill();
     }
 
     public void MonsterT()
@@ -162,7 +200,10 @@ public class BattleManager : MonoBehaviour
 
     public void LevelUP()
     {
-        
+        if (_LevelUpSFX != null && _audioSource != null)
+        {
+            _audioSource.PlayOneShot(_LevelUpSFX);
+        }
 
         // 랜덤으로 중복되지 않게 숫자 뽑기
         int numA = Random.Range(0, 4);
@@ -186,27 +227,34 @@ public class BattleManager : MonoBehaviour
     {
         if(MonsterClear() == true)
         {
-            bool isLevelUp = _player.GainEXP(_totalEXP);
+            _countLevelUps = _player.GainEXP(_totalEXP);
 
-            PlayerPrefs.GetInt("HighestClearedStage", 0);
+            UpdateExpUI();
+
+            _highestStage = PlayerPrefs.GetInt("HighestClearedStage", 0);
 
             if(_currentStage > _highestStage)
             {
                 _highestStage = _currentStage;
             }
 
-            PlayerPrefs.GetInt("HighestClearedStage", _highestStage);
-
+            PlayerPrefs.SetInt("HighestClearedStage", _highestStage);
+            SavePlayerData();
             PlayerPrefs.Save();
 
-            if (isLevelUp == true)
+            if (_countLevelUps > 0)
             {
                 ChangeState(BattleState.LevelUP);
             }
 
             else
             {
+                if (_stageClear != null && _audioSource != null)
+                {
+                    _audioSource.PlayOneShot(_stageClear);
+                }
                 _victoryUI.SetActive(true);
+                _defeatUI.SetActive(false);
                 _returnLobbyUI.SetActive(true);
                 _retrunselecstageUI.SetActive(true);
             }
@@ -216,6 +264,10 @@ public class BattleManager : MonoBehaviour
 
         else if (_player.IsDead)
         {
+            if (_stageFail != null && _audioSource != null)
+            {
+                _audioSource.PlayOneShot(_stageFail);
+            }
             _defeatUI.SetActive(true);
             _returnLobbyUI.SetActive(true);
             _retrunselecstageUI.SetActive(true);
@@ -231,9 +283,14 @@ public class BattleManager : MonoBehaviour
     
     public void SelectTarget(BattleUnits target)
     {
-        
-        if (_currentState != BattleState.PlayerTurn) // 플레이어 턴인지 확인
+
+        if (_isAttacking == true) // 공격 중인지 확인
         {
+            return;
+        }
+
+        if (_currentState != BattleState.PlayerTurn) // 플레이어 턴인지 확인
+        {   
             return;
         }
 
@@ -308,22 +365,24 @@ public class BattleManager : MonoBehaviour
 
         _skillInfo.SetActive(false);
         _skillActiveUI.SetActive(false);
-       
+
         // 목표 타겟 수가 모두 찼으므로 공격시작
+        _isAttacking = true;
 
         StartCoroutine(Co_PlayerAttack(_isSkillMode));
+
         _isSkillMode = false;
 
     }
 
-    IEnumerator MonsterTcrt()
+    IEnumerator MonsterTcrt() // 몬스터 턴 코루틴
     {
 
         yield return new WaitForSeconds(1.0f);
 
         foreach (var monster in _monsters)
         {
-            if(_player.IsDead) // 플레이어가 죽어있는지 확인. 안죽었으면 공격 / 죽었으면 판단단계로 점프
+            if(_player.IsDead) // 플레이어가 죽어있는지 확인 -> 안죽었으면 공격 / 죽었으면 판단단계로 점프
             {
                 ChangeState(BattleState.Judgement);
                 yield break;
@@ -337,7 +396,7 @@ public class BattleManager : MonoBehaviour
             else
             {
                 monster.Attack(_player);
-                yield return new WaitForSeconds(1.5f); // 공격 애니메이션 출력 시간 기다리기
+                yield return new WaitForSeconds(2.0f); // 공격 애니메이션 출력 시간 기다리기
             }
 
         }
@@ -367,12 +426,9 @@ public class BattleManager : MonoBehaviour
                 else
                 {
                     _player.Attack(currentTarget);
+                    yield return new WaitForSeconds(0.8f);
                 }
-
-                if (currentTarget.IsDead == true) // 일단 모든 경험치를 더한다.
-                {
-                    _totalEXP = _totalEXP + currentTarget.ExpReward;
-                }
+                    
 
             }
         }
@@ -385,6 +441,11 @@ public class BattleManager : MonoBehaviour
 
         if (MonsterClear() == true)
         {
+            foreach (var monster in _monsters)
+            {
+                _totalEXP += monster.ExpReward;
+            }
+
             ChangeState(BattleState.Judgement);
         }
         else
@@ -393,7 +454,7 @@ public class BattleManager : MonoBehaviour
         }
     }
 
-    private bool MonsterClear() // 모든 몬스터를 죽인 것을 확인.
+    private bool MonsterClear() // 모든 몬스터를 죽인 것을 확인
     {
         for(int i = 0;  i < _monsters.Count; i++)
         {
@@ -423,12 +484,18 @@ public class BattleManager : MonoBehaviour
         {
             _isSkillMode = true;
             _skillInfo.SetActive(true);
+            UpdateSkillInfoUI();
             _skillActiveUI.SetActive(true);
         }
     }
 
     public void OnClickToLobby() // 로비로 가는 UI
     {
+        if (_SelectSFX != null && _audioSource != null)
+        {
+            _audioSource.PlayOneShot(_SelectSFX);
+        }
+
         Time.timeScale = 1f;
         SceneFlowManager.Instance.ResetLoading();
         SceneFlowManager.Instance.LoadScene(SceneID.Lobby);
@@ -436,11 +503,15 @@ public class BattleManager : MonoBehaviour
 
     public void OnClickToSelectStage() // 스테이지 선택창으로 가는 UI
     {
+        if (_SelectSFX != null && _audioSource != null)
+        {
+            _audioSource.PlayOneShot(_SelectSFX);
+        }
         Time.timeScale = 1f;
         SceneFlowManager.Instance.LoadScene(SceneID.SelectStage);
     }
     
-    public void OnClickSkillEnfoce(int cardIndex)
+    public void OnClickSkillEnfoce(int cardIndex) // 스킬 강화 선택 
     {
 
         _selectCardIndex = cardIndex;
@@ -495,11 +566,58 @@ public class BattleManager : MonoBehaviour
 
         }
 
+        SavePlayerData();
         StartCoroutine(CardSelect());
 
     }
 
-    private IEnumerator CardSelect()
+    public static void SavePlayerData() // 스킬 강화 정보 저장
+    {
+        PlayerPrefs.SetInt("PlayerLevel", BattleUnits._level);
+        PlayerPrefs.SetFloat("_currentEXP", BattleUnits.CurrentEXP);
+
+        PlayerPrefs.SetFloat("damageEnforce", BattleUnits.CurrentEnforce.damageEnforce);
+        PlayerPrefs.SetFloat("declineCooldown", BattleUnits.CurrentEnforce.declineCooldown);
+        PlayerPrefs.SetInt("BonusHeal", BattleUnits.CurrentEnforce.BonusHeal);
+        PlayerPrefs.SetInt("targetCount", BattleUnits.CurrentEnforce.targetCount);
+        PlayerPrefs.SetInt("criticalChance", BattleUnits.CurrentEnforce.criticalChance);
+
+        PlayerPrefs.SetInt("Enforce_Resurrection", BattleUnits.CurrentEnforce.playerresurrection ? 1 : 0);
+        PlayerPrefs.SetInt("isCritical", BattleUnits.CurrentEnforce.isCritical ? 1 : 0);
+        PlayerPrefs.SetInt("Marked", BattleUnits.CurrentEnforce.Marked ? 1 : 0);
+
+        PlayerPrefs.Save();
+    }
+
+    public void UpdateExpUI() // 경험치, 레벨 UI
+    {
+
+        if (_player == null)
+        {
+            return;
+        }
+
+        if (_expSlider != null)
+        {
+            _expSlider.maxValue = BattleUnits.MaxEXP;
+            _expSlider.value = BattleUnits.CurrentEXP;
+
+        }
+
+        if(_expText != null)
+        {
+            _expText.text = $"Lv. {BattleUnits._level} ({BattleUnits._currentEXP} / {BattleUnits._MaxEXP})";
+        }
+
+    }
+
+    public void UpdateSkillInfoUI() // 스킬 강화 정보 UI
+    {
+        _skillInfoText.text = $"추가 피해 : +{BattleUnits.CurrentEnforce.damageEnforce}\n추가 회복 : +{BattleUnits.CurrentEnforce.BonusHeal}\n쿨타임 감소 : -{BattleUnits.CurrentEnforce.declineCooldown}초\n치명타 확률 : {BattleUnits.CurrentEnforce.criticalChance}%\n공격 가능 타겟 :{BattleUnits.CurrentEnforce.targetCount + 1}";
+    }
+
+
+    private IEnumerator CardSelect() // 카드 선택 코루틴
     {
 
         for (int i = 0; i < _enforceSkillUI.Count; i++)
@@ -512,16 +630,28 @@ public class BattleManager : MonoBehaviour
         }
 
         _enforceSkillUI[_selectCardIndex].GetComponent<UnityEngine.UI.Button>().interactable = false;
-
+        _countLevelUps--;
         yield return new WaitForSeconds(3f); 
 
         _enforceSkillUI[_selectCardIndex].SetActive(false);
 
-        _victoryUI.SetActive(true); // 승리 UI 출력
-        _returnLobbyUI.SetActive(true);
-        _retrunselecstageUI.SetActive(true);
+        if (_countLevelUps > 0)
+        {
+            LevelUP();
+        }
+
+        else
+        {
+            _victoryUI.SetActive(true);
+            _returnLobbyUI.SetActive(true);
+            _retrunselecstageUI.SetActive(true);
+        }
+
     }
-    
+    private void Awake()
+    {
+        _audioSource = GetComponent<AudioSource>();
+    }
 
     private void Start()
     {
@@ -529,6 +659,11 @@ public class BattleManager : MonoBehaviour
         {
             CPrint.Warn("인스펙터가 비어있다. 게임 실행 불가");
             return;
+        }
+
+        if (_expText == null)
+        {
+            CPrint.Warn("_expText 슬롯이 인스펙터에서 비어있다.");
         }
 
         // 스킬 UI 끄기
@@ -579,6 +714,7 @@ public class BattleManager : MonoBehaviour
             }
         }
 
+        
         // 로딩 UI 끄기
         if (_loading != null)
         {

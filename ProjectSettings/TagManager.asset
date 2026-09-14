@@ -7,6 +7,8 @@ TagManager:
   - potal
   - Skelleton
   - Zombie
+  - MiddleBoss
+  - MainBoss
   layers:
   - Default
   - TransparentFX

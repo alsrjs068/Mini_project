@@ -1,7 +1,9 @@
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
-
+using UnityEngine.Audio;
+using UnityEngine.EventSystems;
+using UnityEngine.UI;
 
 
 
@@ -20,14 +22,15 @@ public class GameManager : MonoBehaviour
     [Header("게임 일시 정지시 UI")]
     [SerializeField] private GameObject _pausedUI;
 
-    [Header("환경 설정 UI")]
-    [SerializeField] private GameObject _settingUI;
-
     [Header("현재 씬 : 타이틀")]
     [SerializeField] private bool _isTitleScene;
 
     [Header("게임 종료 UI")]
     [SerializeField] private GameObject _gameQuit;
+
+    [Header("게임 초기화 UI")]
+    [SerializeField] private GameObject _gameResetUI;
+    [SerializeField] private GameObject _resetSubtitleUI;
 
     [Header("씬 로딩 화면")]
     [SerializeField] private GameObject _loading;
@@ -36,7 +39,7 @@ public class GameManager : MonoBehaviour
     [SerializeField] private Transform _dungeonPotal;
 
 
-   
+
     #endregion
 
     // 내부 변수
@@ -47,8 +50,8 @@ public class GameManager : MonoBehaviour
 
     public void Title()
     {
-       
-        if (Input.GetMouseButton(0) && _isTitleScene && _isTrans == false)
+
+        if (Input.GetMouseButton(0) && _isTitleScene && _isTrans == false && !EventSystem.current.IsPointerOverGameObject())
         {
             _isTrans = true;
             SceneFlowManager.Instance.LoadScene(SceneID.Lobby);
@@ -107,23 +110,30 @@ public class GameManager : MonoBehaviour
 
     }
 
+    public void OnClickResetData()
+    {
+        StartCoroutine(Co_ShowResetSubtitle());
+        PlayerPrefs.SetInt("HighestClearedStage", 0);
+        PlayerPrefs.Save();
+        BattleUnits.ResetStatData();
+        BattleManager.SavePlayerData();
+    }
+
+    IEnumerator Co_ShowResetSubtitle()
+    {
+        _resetSubtitleUI.SetActive(true);
+
+        yield return new WaitForSeconds(2.0f);
+
+        _resetSubtitleUI.SetActive(false);
+    }
+
+
     public void OnClickResume()
     {
         _paused = false;
         _pausedUI.SetActive(false);
         Time.timeScale = 1;
-    }
-
-    public void OnClickSetting() // 환경설정 UI
-    {
-        _pausedUI.SetActive(false);
-        _settingUI.SetActive(true);
-
-    }
-
-    public void OnClickSave() // 게임 저장 UI
-    {
-
     }
 
     public void OnClickQuit() // 게임 종료 UI
@@ -146,11 +156,11 @@ public class GameManager : MonoBehaviour
             _pausedUI.SetActive(false);
         }
 
-        if( _settingUI != null)
-        {
-            _settingUI.SetActive(false);
-        }
 
+        if(_resetSubtitleUI != null)
+        {
+            _resetSubtitleUI.SetActive(false);
+        }
 
         if (_loading != null)
         {

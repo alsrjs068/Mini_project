@@ -16,10 +16,16 @@ public class StageSelect : MonoBehaviour
     [Header("선택할 대상 표시 테두리")]
     [SerializeField] private GameObject _selectFrame;
 
+    [Header("리스트 효과음")]
+    [SerializeField] private AudioClip _ListSFX;
+
+    [Header("플레이어 선택 효과음")]
+    [SerializeField] private AudioClip _SelectSFX;
+
     // 내부 변수
 
     private int _currentIndex = 0;
-
+    protected AudioSource _audioSource;
 
     public void EnterStage(int stageIndex)
     {
@@ -62,7 +68,10 @@ public class StageSelect : MonoBehaviour
         }
     }
 
-
+    private void Awake()
+    {
+        _audioSource = GetComponent<AudioSource>();
+    }
     void Start()
     {
         int highestCleared = PlayerPrefs.GetInt("HighestClearedStage", 0);
@@ -102,6 +111,11 @@ public class StageSelect : MonoBehaviour
         // 1. 좌우 이동 입력 감지
         if (Input.GetKeyDown(KeyCode.LeftArrow) || Input.GetKeyDown(KeyCode.A))
         {
+            if (_ListSFX != null && _audioSource != null)
+            {
+                _audioSource.PlayOneShot(_ListSFX);
+            }
+
             _selectFrame.SetActive(true);
             if (_currentIndex > 0)
             {
@@ -111,6 +125,11 @@ public class StageSelect : MonoBehaviour
         }
         else if (Input.GetKeyDown(KeyCode.RightArrow) || Input.GetKeyDown(KeyCode.D))
         {
+            if (_ListSFX != null && _audioSource != null)
+            {
+                _audioSource.PlayOneShot(_ListSFX);
+            }
+
             _selectFrame.SetActive(true);
             if (_currentIndex < _stages.Count - 1)
             {
@@ -122,6 +141,11 @@ public class StageSelect : MonoBehaviour
         // 2. 키보드 결정 키입력 감지
         if (Input.GetKeyDown(KeyCode.Space) || Input.GetKeyDown(KeyCode.KeypadEnter))
         {
+            if (_SelectSFX != null && _audioSource != null)
+            {
+                _audioSource.PlayOneShot(_SelectSFX);
+            }
+
             EnterStage(_currentIndex);
         }
     }
