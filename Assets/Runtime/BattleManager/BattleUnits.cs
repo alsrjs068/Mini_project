@@ -30,7 +30,7 @@ public class BattleUnits : MonoBehaviour, IDamageable, IAttackable // 추상화, 캡
     [SerializeField] private GameObject _healEffectPrefab; // 힐 이펙트
     [SerializeField] private GameObject _hitEffectPrefab;  // 피격 이펙트
     [SerializeField] private GameObject _resEffectPrefab;  // 부활 이펙트
-
+    
     [Header("일반 공격 효과음")]
     [SerializeField] private AudioClip _attackSFX;
 
@@ -108,7 +108,7 @@ public class BattleUnits : MonoBehaviour, IDamageable, IAttackable // 추상화, 캡
 
         if (_hitEffectPrefab != null)
         {
-            GameObject hiteffect = Instantiate(_hitEffectPrefab, transform.position, Quaternion.identity);
+            GameObject hiteffect = Instantiate(_hitEffectPrefab, transform.position + Vector3.up, Quaternion.identity);
             Destroy(hiteffect, 1.0f);
         }
 
@@ -282,7 +282,7 @@ public class BattleUnits : MonoBehaviour, IDamageable, IAttackable // 추상화, 캡
         if (_healEffectPrefab != null)
         {
             GameObject healeffect = Instantiate(_healEffectPrefab, target.transform.position, Quaternion.identity);
-            Destroy(healeffect, 1.0f);
+            Destroy(healeffect, 1.5f);
         }
 
         float Damage = _stat.finalATK * 1.5f + _currentEnforce.damageEnforce;
@@ -324,7 +324,7 @@ public class BattleUnits : MonoBehaviour, IDamageable, IAttackable // 추상화, 캡
         if (_healEffectPrefab != null)
         {
             GameObject healeffect = Instantiate(_healEffectPrefab, transform.position, Quaternion.identity);
-            Destroy(healeffect, 1.0f);
+            Destroy(healeffect, 1.5f);
         }
 
         float totalHeal = _stat.finalATK * 0.8f + _currentEnforce.BonusHeal;
@@ -347,7 +347,7 @@ public class BattleUnits : MonoBehaviour, IDamageable, IAttackable // 추상화, 캡
             if (_resEffectPrefab != null)
             {
                 GameObject reseffect = Instantiate(_resEffectPrefab, transform.position, Quaternion.identity);
-                Destroy(reseffect, 1.0f);
+                Destroy(reseffect, 1.5f);
             }
 
             _currentEnforce.playerresurrection = false; // 부활 가능한 상태를 불가능으로 바꾸고
@@ -359,6 +359,7 @@ public class BattleUnits : MonoBehaviour, IDamageable, IAttackable // 추상화, 캡
             }
         }
     }
+
 
     public static void LoadEnforceData() // 저장된 스킬 강화 데이터 불러오기
     {

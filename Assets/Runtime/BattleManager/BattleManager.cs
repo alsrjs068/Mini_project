@@ -80,6 +80,8 @@ public class BattleManager : MonoBehaviour
     [Header("플레이어 선택 효과음")]
     [SerializeField] private AudioClip _SelectSFX;
 
+    [Header("이펙트 프리팹")]
+    [SerializeField] private GameObject _targetSelectPrefab; // 타겟 선택시 이펙트
     #endregion
 
 
@@ -302,6 +304,7 @@ public class BattleManager : MonoBehaviour
         // 선택된 타겟 클릭 시 선택 취소
         if (_selectedTargets.Contains(target))
         {
+            
             _selectedTargets.Remove(target);
             return;
         }
@@ -314,6 +317,7 @@ public class BattleManager : MonoBehaviour
                 if (_isSkillMode)
                 {
                     _selectedTargets.Add(target);
+                    GameObject selectE = Instantiate(_targetSelectPrefab, target.transform.position + Vector3.up, Quaternion.identity);
                 }
 
                 else
@@ -491,6 +495,7 @@ public class BattleManager : MonoBehaviour
 
     public void OnClickToLobby() // 로비로 가는 UI
     {
+        
         if (_SelectSFX != null && _audioSource != null)
         {
             _audioSource.PlayOneShot(_SelectSFX);
@@ -498,16 +503,29 @@ public class BattleManager : MonoBehaviour
 
         Time.timeScale = 1f;
         SceneFlowManager.Instance.ResetLoading();
+
+        if (_loading != null)
+        {
+            _loading.SetActive(true);
+        }
+
         SceneFlowManager.Instance.LoadScene(SceneID.Lobby);
     }
 
     public void OnClickToSelectStage() // 스테이지 선택창으로 가는 UI
     {
+        
         if (_SelectSFX != null && _audioSource != null)
         {
             _audioSource.PlayOneShot(_SelectSFX);
         }
         Time.timeScale = 1f;
+
+        if (_loading != null)
+        {
+            _loading.SetActive(true);
+        }
+
         SceneFlowManager.Instance.LoadScene(SceneID.SelectStage);
     }
     
@@ -651,6 +669,7 @@ public class BattleManager : MonoBehaviour
     private void Awake()
     {
         _audioSource = GetComponent<AudioSource>();
+        
     }
 
     private void Start()
@@ -666,6 +685,8 @@ public class BattleManager : MonoBehaviour
             CPrint.Warn("_expText 슬롯이 인스펙터에서 비어있다.");
         }
 
+        BattleUnits.LoadEnforceData();
+        
         // 스킬 UI 끄기
         if (_playerSkillUI != null)
         {
