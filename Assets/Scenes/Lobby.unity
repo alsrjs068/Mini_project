@@ -1165,7 +1165,7 @@ MonoBehaviour:
   - Id: 8
     SceneName: Market
   - Id: 9
-    SceneName: EQEnforce
+    SceneName: Ending
   _buildOnAwake: 1
 --- !u!4 &156360625
 Transform:
@@ -86843,7 +86843,7 @@ MonoBehaviour:
   _catalog: {fileID: 156360624}
   _TransitionUI: {fileID: 0}
   _dontDestroyOnLoad: 1
-  _loading: {fileID: 0}
+  _loading: {fileID: 1146461737}
 --- !u!4 &1160438970
 Transform:
   m_ObjectHideFlags: 0
@@ -88470,6 +88470,7 @@ MonoBehaviour:
   _stageFail: {fileID: 0}
   _LevelUpSFX: {fileID: 0}
   _SelectSFX: {fileID: 0}
+  _targetSelectPrefab: {fileID: 0}
 --- !u!82 &1451041240
 AudioSource:
   m_ObjectHideFlags: 0

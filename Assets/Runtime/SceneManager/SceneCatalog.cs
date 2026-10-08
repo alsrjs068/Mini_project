@@ -14,7 +14,7 @@ public enum SceneID
     Stage5 = 6,
     SelectStage = 7,
     Market = 8,
-    EQEnforce = 9
+    Ending = 9
 }
 
 [System.Serializable]
@@ -104,6 +104,14 @@ public class SceneCatalog : MonoBehaviour
 
     public bool TryGetSceneName(SceneID id, out string sceneName)
     {
+
+        if (id == SceneID.Ending)
+        {
+            sceneName = "Ending";
+            return true;
+        }
+
+
         return _idToName.TryGetValue(id, out sceneName);
     }
 

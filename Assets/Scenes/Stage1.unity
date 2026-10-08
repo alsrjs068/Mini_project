@@ -5141,7 +5141,6 @@ MonoBehaviour:
   _healEffectPrefab: {fileID: 0}
   _hitEffectPrefab: {fileID: 0}
   _resEffectPrefab: {fileID: 0}
-  _targetSelectPrefab: {fileID: 0}
   _attackSFX: {fileID: 0}
   _HealSFX: {fileID: 8300000, guid: 8520c86e0e9cfe84fae89491dd1443ad, type: 3}
   _currentCoolDown: 0
@@ -10783,7 +10782,6 @@ MonoBehaviour:
   _healEffectPrefab: {fileID: 0}
   _hitEffectPrefab: {fileID: 0}
   _resEffectPrefab: {fileID: 0}
-  _targetSelectPrefab: {fileID: 0}
   _attackSFX: {fileID: 8300000, guid: 883b35223a6eff8409bd3aa8aaa368b7, type: 3}
   _HealSFX: {fileID: 0}
   _currentCoolDown: 0
@@ -12365,7 +12363,6 @@ MonoBehaviour:
   _healEffectPrefab: {fileID: 0}
   _hitEffectPrefab: {fileID: 0}
   _resEffectPrefab: {fileID: 0}
-  _targetSelectPrefab: {fileID: 0}
   _attackSFX: {fileID: 8300000, guid: 883b35223a6eff8409bd3aa8aaa368b7, type: 3}
   _HealSFX: {fileID: 0}
   _currentCoolDown: 0
@@ -12515,7 +12512,7 @@ MonoBehaviour:
   - Id: 8
     SceneName: Market
   - Id: 9
-    SceneName: EQEnforce
+    SceneName: Ending
   _buildOnAwake: 1
 --- !u!4 &1752264826
 Transform:
@@ -37391,7 +37388,6 @@ MonoBehaviour:
   _healEffectPrefab: {fileID: 1592874211}
   _hitEffectPrefab: {fileID: 1348083705}
   _resEffectPrefab: {fileID: 2344470525833216528}
-  _targetSelectPrefab: {fileID: 0}
   _attackSFX: {fileID: 8300000, guid: a5e47538f4cff4a4ba07815b1898c7db, type: 3}
   _HealSFX: {fileID: 8300000, guid: 8520c86e0e9cfe84fae89491dd1443ad, type: 3}
   _currentCoolDown: 0

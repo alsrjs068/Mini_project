@@ -141,8 +141,10 @@ public class GameManager : MonoBehaviour
         Application.Quit();
     }
 
-    private void Awake()
+    public void OnClickEnding()
     {
+        Time.timeScale = 1;
+        SceneFlowManager.Instance.LoadScene(SceneID.Title);
         
     }
 

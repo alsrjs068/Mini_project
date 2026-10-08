@@ -80,8 +80,7 @@ public class BattleManager : MonoBehaviour
     [Header("플레이어 선택 효과음")]
     [SerializeField] private AudioClip _SelectSFX;
 
-    [Header("이펙트 프리팹")]
-    [SerializeField] private GameObject _targetSelectPrefab; // 타겟 선택시 이펙트
+    
     #endregion
 
 
@@ -98,6 +97,7 @@ public class BattleManager : MonoBehaviour
     private bool _isAttacking = false;
     private int _countLevelUps = 0;
     protected AudioSource _audioSource;
+   
 
     public void ChangeState(BattleState newState)
     {
@@ -247,6 +247,13 @@ public class BattleManager : MonoBehaviour
             if (_countLevelUps > 0)
             {
                 ChangeState(BattleState.LevelUP);
+
+                return;
+            }
+
+            if (_currentStage == 5)
+            {
+                SceneFlowManager.Instance.LoadScene(SceneID.Ending);
             }
 
             else
@@ -306,6 +313,7 @@ public class BattleManager : MonoBehaviour
         {
             
             _selectedTargets.Remove(target);
+            
             return;
         }
 
@@ -317,7 +325,6 @@ public class BattleManager : MonoBehaviour
                 if (_isSkillMode)
                 {
                     _selectedTargets.Add(target);
-                    GameObject selectE = Instantiate(_targetSelectPrefab, target.transform.position + Vector3.up, Quaternion.identity);
                 }
 
                 else
@@ -660,9 +667,17 @@ public class BattleManager : MonoBehaviour
 
         else
         {
-            _victoryUI.SetActive(true);
-            _returnLobbyUI.SetActive(true);
-            _retrunselecstageUI.SetActive(true);
+            if (_currentStage == 5)
+            {
+                SceneFlowManager.Instance.LoadScene(SceneID.Ending);
+            }
+
+            else
+            {
+                _victoryUI.SetActive(true);
+                _returnLobbyUI.SetActive(true);
+                _retrunselecstageUI.SetActive(true);
+            }
         }
 
     }
